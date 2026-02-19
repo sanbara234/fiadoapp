@@ -121,6 +121,17 @@ def init_db():
                 fecha TIMESTAMP DEFAULT NOW()
             )
         """)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS stock (
+                id SERIAL PRIMARY KEY,
+                negocio_id INTEGER NOT NULL REFERENCES negocios(id) ON DELETE CASCADE,
+                nombre TEXT NOT NULL,
+                cantidad REAL DEFAULT 0,
+                precio_costo REAL DEFAULT 0,
+                precio_venta REAL DEFAULT 0,
+                creado_en TIMESTAMP DEFAULT NOW()
+            )
+        """)
     else:
         # SQLite
         cur.executescript("""
@@ -171,6 +182,16 @@ def init_db():
                 descripcion TEXT NOT NULL,
                 monto REAL NOT NULL,
                 fecha TEXT DEFAULT (datetime('now','localtime')),
+                FOREIGN KEY (negocio_id) REFERENCES negocios(id) ON DELETE CASCADE
+            );
+            CREATE TABLE IF NOT EXISTS stock (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                negocio_id INTEGER NOT NULL,
+                nombre TEXT NOT NULL,
+                cantidad REAL DEFAULT 0,
+                precio_costo REAL DEFAULT 0,
+                precio_venta REAL DEFAULT 0,
+                creado_en TEXT DEFAULT (datetime('now','localtime')),
                 FOREIGN KEY (negocio_id) REFERENCES negocios(id) ON DELETE CASCADE
             );
         """)
@@ -617,6 +638,123 @@ def eliminar_venta(vid: int, session=Depends(get_session)):
     conn.commit()
     conn.close()
     return {"ok": True}
+
+class StockCreate(BaseModel):
+    nombre: str
+    cantidad: float
+    precio_costo: Optional[float] = 0
+    precio_venta: Optional[float] = 0
+
+class StockUpdate(BaseModel):
+    nombre: Optional[str] = None
+    cantidad: Optional[float] = None
+    precio_costo: Optional[float] = None
+    precio_venta: Optional[float] = None
+
+# ---- STOCK ----
+
+@app.get("/stock")
+def get_stock(buscar: Optional[str] = None, session=Depends(get_session)):
+    nid = get_negocio_id(session)
+    conn = get_db()
+    cur = conn.cursor()
+    if buscar:
+        cur.execute(q("SELECT * FROM stock WHERE negocio_id=? AND nombre LIKE ? ORDER BY nombre"), (nid, f"%{buscar}%"))
+    else:
+        cur.execute(q("SELECT * FROM stock WHERE negocio_id=? ORDER BY nombre"), (nid,))
+    rows = fetchall(cur)
+    conn.close()
+    return rows
+
+@app.post("/stock", status_code=201)
+def crear_stock(data: StockCreate, session=Depends(get_session)):
+    nid = get_negocio_id(session)
+    conn = get_db()
+    cur = conn.cursor()
+    if DATABASE_URL:
+        cur.execute("INSERT INTO stock (negocio_id, nombre, cantidad, precio_costo, precio_venta) VALUES (%s,%s,%s,%s,%s) RETURNING id",
+                    (nid, data.nombre, data.cantidad, data.precio_costo, data.precio_venta))
+        sid = cur.fetchone()["id"]
+    else:
+        cur.execute("INSERT INTO stock (negocio_id, nombre, cantidad, precio_costo, precio_venta) VALUES (?,?,?,?,?)",
+                    (nid, data.nombre, data.cantidad, data.precio_costo, data.precio_venta))
+        sid = cur.lastrowid
+    conn.commit()
+    cur.execute(q("SELECT * FROM stock WHERE id=?"), (sid,))
+    s = fetchone(cur)
+    conn.close()
+    return s
+
+@app.put("/stock/{sid}")
+def editar_stock(sid: int, data: StockUpdate, session=Depends(get_session)):
+    nid = get_negocio_id(session)
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(q("SELECT * FROM stock WHERE id=? AND negocio_id=?"), (sid, nid))
+    s = fetchone(cur)
+    if not s:
+        raise HTTPException(status_code=404, detail="No encontrado")
+    nombre       = data.nombre       if data.nombre       is not None else s["nombre"]
+    cantidad     = data.cantidad     if data.cantidad     is not None else s["cantidad"]
+    precio_costo = data.precio_costo if data.precio_costo is not None else s["precio_costo"]
+    precio_venta = data.precio_venta if data.precio_venta is not None else s["precio_venta"]
+    cur.execute(q("UPDATE stock SET nombre=?, cantidad=?, precio_costo=?, precio_venta=? WHERE id=?"),
+                (nombre, cantidad, precio_costo, precio_venta, sid))
+    conn.commit()
+    cur.execute(q("SELECT * FROM stock WHERE id=?"), (sid,))
+    updated = fetchone(cur)
+    conn.close()
+    return updated
+
+@app.delete("/stock/{sid}")
+def eliminar_stock(sid: int, session=Depends(get_session)):
+    nid = get_negocio_id(session)
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(q("SELECT * FROM stock WHERE id=? AND negocio_id=?"), (sid, nid))
+    if not fetchone(cur):
+        raise HTTPException(status_code=404, detail="No encontrado")
+    cur.execute(q("DELETE FROM stock WHERE id=?"), (sid,))
+    conn.commit()
+    conn.close()
+    return {"ok": True}
+
+# ---- VENTAS POR DÍA ----
+
+@app.get("/ventas/por-dia")
+def get_ventas_por_dia(session=Depends(get_session)):
+    nid = get_negocio_id(session)
+    conn = get_db()
+    cur = conn.cursor()
+    dias_es = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom']
+    if DATABASE_URL:
+        cur.execute("""
+            SELECT to_char(fecha, 'ID')::int as dow,
+                   to_char(fecha, 'Dy') as label,
+                   COALESCE(SUM(monto),0) as total
+            FROM ventas
+            WHERE negocio_id=%s AND fecha >= NOW() - INTERVAL '7 days'
+            GROUP BY dow, label ORDER BY dow
+        """, (nid,))
+        rows = fetchall(cur)
+        result = []
+        for r in rows:
+            result.append({"label": dias_es[int(r["dow"])-1], "total": float(r["total"])})
+    else:
+        cur.execute("""
+            SELECT strftime('%w', fecha) as dow,
+                   COALESCE(SUM(monto),0) as total
+            FROM ventas
+            WHERE negocio_id=? AND fecha >= date('now','localtime','-6 days')
+            GROUP BY dow ORDER BY dow
+        """, (nid,))
+        rows = fetchall(cur)
+        dias_sqlite = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb']
+        result = []
+        for r in rows:
+            result.append({"label": dias_sqlite[int(r["dow"])], "total": float(r["total"])})
+    conn.close()
+    return result
 
 if os.path.exists("static"):
     app.mount("/", StaticFiles(directory="static", html=True), name="static")
