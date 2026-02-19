@@ -269,21 +269,19 @@ def register(data: RegisterData, response: Response):
         conn.close()
         raise HTTPException(status_code=400, detail="El email ya está registrado")
 
-    cur.execute(q("INSERT INTO usuarios (email, password_hash, nombre) VALUES (?,?,?)"),
+    cur.execute(q("INSERT INTO usuarios (email, password_hash, nombre) VALUES (?,?,?) RETURNING id" if DATABASE_URL else "INSERT INTO usuarios (email, password_hash, nombre) VALUES (?,?,?)"),
                 (data.email, hash_password(data.password), data.nombre))
 
     if DATABASE_URL:
-        cur.execute("SELECT lastval()")
-        user_id = cur.fetchone()[0]
+        user_id = cur.fetchone()["id"]
     else:
         user_id = cur.lastrowid
 
-    cur.execute(q("INSERT INTO negocios (usuario_id, nombre) VALUES (?,?)"),
+    cur.execute(q("INSERT INTO negocios (usuario_id, nombre) VALUES (?,?) RETURNING id" if DATABASE_URL else "INSERT INTO negocios (usuario_id, nombre) VALUES (?,?)"),
                 (user_id, data.negocio))
 
     if DATABASE_URL:
-        cur.execute("SELECT lastval()")
-        negocio_id = cur.fetchone()[0]
+        negocio_id = cur.fetchone()["id"]
     else:
         negocio_id = cur.lastrowid
 
@@ -358,11 +356,10 @@ def get_negocios(session=Depends(get_session)):
 def crear_negocio(data: NegocioCreate, session=Depends(get_session)):
     conn = get_db()
     cur = conn.cursor()
-    cur.execute(q("INSERT INTO negocios (usuario_id, nombre) VALUES (?,?)"),
+    cur.execute(q("INSERT INTO negocios (usuario_id, nombre) VALUES (?,?) RETURNING id" if DATABASE_URL else "INSERT INTO negocios (usuario_id, nombre) VALUES (?,?)"),
                 (session["usuario_id"], data.nombre))
     if DATABASE_URL:
-        cur.execute("SELECT lastval()")
-        nid = cur.fetchone()[0]
+        nid = cur.fetchone()["id"]
     else:
         nid = cur.lastrowid
     conn.commit()
@@ -413,11 +410,10 @@ def crear_contacto(data: ContactoCreate, session=Depends(get_session)):
         raise HTTPException(status_code=400, detail="tipo invalido")
     conn = get_db()
     cur = conn.cursor()
-    cur.execute(q("INSERT INTO contactos (negocio_id, tipo, nombre, telefono, deuda) VALUES (?,?,?,?,?)"),
+    cur.execute(q("INSERT INTO contactos (negocio_id, tipo, nombre, telefono, deuda) VALUES (?,?,?,?,?) RETURNING id" if DATABASE_URL else "INSERT INTO contactos (negocio_id, tipo, nombre, telefono, deuda) VALUES (?,?,?,?,?)"),
                 (nid, data.tipo, data.nombre, data.telefono, data.deuda_inicial or 0))
     if DATABASE_URL:
-        cur.execute("SELECT lastval()")
-        cid = cur.fetchone()[0]
+        cid = cur.fetchone()["id"]
     else:
         cid = cur.lastrowid
     if data.deuda_inicial and data.deuda_inicial > 0:
@@ -496,9 +492,10 @@ def crear_transaccion(cid: int, data: TransaccionCreate, session=Depends(get_ses
     cur.execute(q("INSERT INTO transacciones (contacto_id, tipo, monto, nota) VALUES (?,?,?,?)"),
                 (cid, data.tipo, data.monto, data.nota))
     nueva_deuda = c["deuda"] + data.monto if data.tipo == "deuda" else max(0, c["deuda"] - data.monto)
-    ts = "NOW()" if DATABASE_URL else "datetime('now','localtime')"
-    cur.execute(f"UPDATE contactos SET deuda=?, ultimo_movimiento={ts} WHERE id=?".replace("?", "%s" if DATABASE_URL else "?"),
-                (nueva_deuda, cid))
+    if DATABASE_URL:
+        cur.execute("UPDATE contactos SET deuda=%s, ultimo_movimiento=NOW() WHERE id=%s", (nueva_deuda, cid))
+    else:
+        cur.execute("UPDATE contactos SET deuda=?, ultimo_movimiento=datetime('now','localtime') WHERE id=?", (nueva_deuda, cid))
     conn.commit()
     conn.close()
     return {"ok": True, "nueva_deuda": nueva_deuda}
@@ -555,10 +552,15 @@ def get_ventas(periodo: str = Query("mes"), buscar: Optional[str] = None, sessio
     cur = conn.cursor()
     pf = get_periodo_filter(periodo)
     if buscar:
-        cur.execute(q(f"SELECT * FROM ventas WHERE negocio_id=? AND descripcion LIKE ? {pf} ORDER BY fecha DESC"),
-                    (nid, f"%{buscar}%"))
+        if DATABASE_URL:
+            cur.execute(f"SELECT * FROM ventas WHERE negocio_id=%s AND descripcion LIKE %s {pf} ORDER BY fecha DESC", (nid, f"%{buscar}%"))
+        else:
+            cur.execute(f"SELECT * FROM ventas WHERE negocio_id=? AND descripcion LIKE ? {pf} ORDER BY fecha DESC", (nid, f"%{buscar}%"))
     else:
-        cur.execute(q(f"SELECT * FROM ventas WHERE negocio_id=? {pf} ORDER BY fecha DESC"), (nid,))
+        if DATABASE_URL:
+            cur.execute(f"SELECT * FROM ventas WHERE negocio_id=%s {pf} ORDER BY fecha DESC", (nid,))
+        else:
+            cur.execute(f"SELECT * FROM ventas WHERE negocio_id=? {pf} ORDER BY fecha DESC", (nid,))
     rows = fetchall(cur)
     conn.close()
     return rows
@@ -569,7 +571,10 @@ def get_ventas_resumen(periodo: str = Query("mes"), session=Depends(get_session)
     conn = get_db()
     cur = conn.cursor()
     pf = get_periodo_filter(periodo)
-    cur.execute(q(f"SELECT COALESCE(SUM(monto),0) as total, COUNT(*) as cantidad FROM ventas WHERE negocio_id=? {pf}"), (nid,))
+    if DATABASE_URL:
+        cur.execute(f"SELECT COALESCE(SUM(monto),0) as total, COUNT(*) as cantidad FROM ventas WHERE negocio_id=%s {pf}", (nid,))
+    else:
+        cur.execute(f"SELECT COALESCE(SUM(monto),0) as total, COUNT(*) as cantidad FROM ventas WHERE negocio_id=? {pf}", (nid,))
     r = fetchone(cur)
     conn.close()
     return {"total": r["total"], "cantidad": r["cantidad"]}
@@ -581,11 +586,10 @@ def crear_venta(data: VentaCreate, session=Depends(get_session)):
         raise HTTPException(status_code=400, detail="monto debe ser > 0")
     conn = get_db()
     cur = conn.cursor()
-    cur.execute(q("INSERT INTO ventas (negocio_id, descripcion, monto) VALUES (?,?,?)"),
+    cur.execute(q("INSERT INTO ventas (negocio_id, descripcion, monto) VALUES (?,?,?) RETURNING id" if DATABASE_URL else "INSERT INTO ventas (negocio_id, descripcion, monto) VALUES (?,?,?)"),
                 (nid, data.descripcion, data.monto))
     if DATABASE_URL:
-        cur.execute("SELECT lastval()")
-        vid = cur.fetchone()[0]
+        vid = cur.fetchone()["id"]
     else:
         vid = cur.lastrowid
     conn.commit()
