@@ -269,20 +269,19 @@ def register(data: RegisterData, response: Response):
         conn.close()
         raise HTTPException(status_code=400, detail="El email ya está registrado")
 
-    cur.execute(q("INSERT INTO usuarios (email, password_hash, nombre) VALUES (?,?,?) RETURNING id" if DATABASE_URL else "INSERT INTO usuarios (email, password_hash, nombre) VALUES (?,?,?)"),
-                (data.email, hash_password(data.password), data.nombre))
-
     if DATABASE_URL:
+        cur.execute("INSERT INTO usuarios (email, password_hash, nombre) VALUES (%s,%s,%s) RETURNING id",
+                    (data.email, hash_password(data.password), data.nombre))
         user_id = cur.fetchone()["id"]
-    else:
-        user_id = cur.lastrowid
-
-    cur.execute(q("INSERT INTO negocios (usuario_id, nombre) VALUES (?,?) RETURNING id" if DATABASE_URL else "INSERT INTO negocios (usuario_id, nombre) VALUES (?,?)"),
-                (user_id, data.negocio))
-
-    if DATABASE_URL:
+        cur.execute("INSERT INTO negocios (usuario_id, nombre) VALUES (%s,%s) RETURNING id",
+                    (user_id, data.negocio))
         negocio_id = cur.fetchone()["id"]
     else:
+        cur.execute("INSERT INTO usuarios (email, password_hash, nombre) VALUES (?,?,?)",
+                    (data.email, hash_password(data.password), data.nombre))
+        user_id = cur.lastrowid
+        cur.execute("INSERT INTO negocios (usuario_id, nombre) VALUES (?,?)",
+                    (user_id, data.negocio))
         negocio_id = cur.lastrowid
 
     token = secrets.token_urlsafe(32)
@@ -356,11 +355,13 @@ def get_negocios(session=Depends(get_session)):
 def crear_negocio(data: NegocioCreate, session=Depends(get_session)):
     conn = get_db()
     cur = conn.cursor()
-    cur.execute(q("INSERT INTO negocios (usuario_id, nombre) VALUES (?,?) RETURNING id" if DATABASE_URL else "INSERT INTO negocios (usuario_id, nombre) VALUES (?,?)"),
-                (session["usuario_id"], data.nombre))
     if DATABASE_URL:
+        cur.execute("INSERT INTO negocios (usuario_id, nombre) VALUES (%s,%s) RETURNING id",
+                    (session["usuario_id"], data.nombre))
         nid = cur.fetchone()["id"]
     else:
+        cur.execute("INSERT INTO negocios (usuario_id, nombre) VALUES (?,?)",
+                    (session["usuario_id"], data.nombre))
         nid = cur.lastrowid
     conn.commit()
     cur.execute(q("SELECT * FROM negocios WHERE id=?"), (nid,))
@@ -410,18 +411,22 @@ def crear_contacto(data: ContactoCreate, session=Depends(get_session)):
         raise HTTPException(status_code=400, detail="tipo invalido")
     conn = get_db()
     cur = conn.cursor()
-    cur.execute(q("INSERT INTO contactos (negocio_id, tipo, nombre, telefono, deuda) VALUES (?,?,?,?,?) RETURNING id" if DATABASE_URL else "INSERT INTO contactos (negocio_id, tipo, nombre, telefono, deuda) VALUES (?,?,?,?,?)"),
-                (nid, data.tipo, data.nombre, data.telefono, data.deuda_inicial or 0))
     if DATABASE_URL:
+        cur.execute("INSERT INTO contactos (negocio_id, tipo, nombre, telefono, deuda) VALUES (%s,%s,%s,%s,%s) RETURNING id",
+                    (nid, data.tipo, data.nombre, data.telefono, data.deuda_inicial or 0))
         cid = cur.fetchone()["id"]
+        if data.deuda_inicial and data.deuda_inicial > 0:
+            cur.execute("INSERT INTO transacciones (contacto_id, tipo, monto, nota) VALUES (%s,%s,%s,%s)",
+                        (cid, "deuda", data.deuda_inicial, "Deuda inicial"))
+            cur.execute("UPDATE contactos SET ultimo_movimiento=NOW() WHERE id=%s", (cid,))
     else:
+        cur.execute("INSERT INTO contactos (negocio_id, tipo, nombre, telefono, deuda) VALUES (?,?,?,?,?)",
+                    (nid, data.tipo, data.nombre, data.telefono, data.deuda_inicial or 0))
         cid = cur.lastrowid
-    if data.deuda_inicial and data.deuda_inicial > 0:
-        cur.execute(q("INSERT INTO transacciones (contacto_id, tipo, monto, nota) VALUES (?,?,?,?)"),
-                    (cid, "deuda", data.deuda_inicial, "Deuda inicial"))
-        cur.execute(q("UPDATE contactos SET ultimo_movimiento=NOW() WHERE id=?") if DATABASE_URL
-                    else q("UPDATE contactos SET ultimo_movimiento=datetime('now','localtime') WHERE id=?"),
-                    (cid,))
+        if data.deuda_inicial and data.deuda_inicial > 0:
+            cur.execute("INSERT INTO transacciones (contacto_id, tipo, monto, nota) VALUES (?,?,?,?)",
+                        (cid, "deuda", data.deuda_inicial, "Deuda inicial"))
+            cur.execute("UPDATE contactos SET ultimo_movimiento=datetime('now','localtime') WHERE id=?", (cid,))
     conn.commit()
     cur.execute(q("SELECT * FROM contactos WHERE id=?"), (cid,))
     c = fetchone(cur)
@@ -586,11 +591,13 @@ def crear_venta(data: VentaCreate, session=Depends(get_session)):
         raise HTTPException(status_code=400, detail="monto debe ser > 0")
     conn = get_db()
     cur = conn.cursor()
-    cur.execute(q("INSERT INTO ventas (negocio_id, descripcion, monto) VALUES (?,?,?) RETURNING id" if DATABASE_URL else "INSERT INTO ventas (negocio_id, descripcion, monto) VALUES (?,?,?)"),
-                (nid, data.descripcion, data.monto))
     if DATABASE_URL:
+        cur.execute("INSERT INTO ventas (negocio_id, descripcion, monto) VALUES (%s,%s,%s) RETURNING id",
+                    (nid, data.descripcion, data.monto))
         vid = cur.fetchone()["id"]
     else:
+        cur.execute("INSERT INTO ventas (negocio_id, descripcion, monto) VALUES (?,?,?)",
+                    (nid, data.descripcion, data.monto))
         vid = cur.lastrowid
     conn.commit()
     cur.execute(q("SELECT * FROM ventas WHERE id=?"), (vid,))
