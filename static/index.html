@@ -3,6 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#4285f4">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="FiadoApp">
+<link rel="manifest" href="/manifest.json">
 <title>FiadoApp</title>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
@@ -416,6 +422,69 @@ body {
 .wa-send-all:hover { background:#1da851; }
 .wa-counter { font-size:12px; color:#888; text-align:center; margin-top:8px; }
 
+/* ── STOCK ── */
+.stock-screen { display:none; flex:1; flex-direction:column; overflow:hidden; }
+.stock-screen.on { display:flex; }
+.stock-summary {
+  display:flex; padding:14px 20px; gap:14px;
+  border-bottom:1px solid #e8e8e8; flex-shrink:0;
+}
+.st-card {
+  flex:1; padding:12px 16px; border-radius:10px; border:1px solid #e8e8e8;
+}
+.st-card.total { background:#f0f4ff; border-color:#c7d7fe; }
+.st-card.bajo { background:#fff5f5; border-color:#ffcdd2; }
+.st-card.items { background:#f0fdf4; border-color:#bbf7d0; }
+.st-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px; color:#888; }
+.st-card.total .st-label { color:#3b5bdb; }
+.st-card.bajo .st-label { color:#e53935; }
+.st-card.items .st-label { color:#16a34a; }
+.st-val { font-size:20px; font-weight:800; color:#1a1a1a; }
+.st-sub { font-size:11px; color:#aaa; margin-top:2px; }
+.stock-list { flex:1; overflow-y:auto; }
+.stock-row {
+  display:flex; align-items:center; padding:12px 20px;
+  border-bottom:1px solid #f0f0f0; transition:background 0.1s; position:relative;
+}
+.stock-row:hover { background:#f9f9f9; }
+.stock-row:hover .row-actions { display:flex; }
+.stock-icon {
+  width:36px; height:36px; border-radius:8px; background:#e8f0fe;
+  display:flex; align-items:center; justify-content:center;
+  font-size:16px; flex-shrink:0; margin-right:12px;
+}
+.stock-info { flex:1; min-width:0; }
+.stock-name { font-size:14px; font-weight:600; color:#1a1a1a; }
+.stock-qty { font-size:12px; margin-top:2px; }
+.stock-qty.ok { color:#43a047; }
+.stock-qty.low { color:#e53935; font-weight:600; }
+.stock-prices { text-align:right; flex-shrink:0; }
+.stock-pv { font-size:14px; font-weight:700; color:#1a1a1a; }
+.stock-pc { font-size:11px; color:#aaa; margin-top:1px; }
+.stock-ganancia { font-size:11px; color:#43a047; font-weight:600; margin-top:1px; }
+
+/* ── GRAFICOS ── */
+.graf-screen { display:none; flex:1; flex-direction:column; overflow:hidden; }
+.graf-screen.on { display:flex; }
+.graf-body { flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:20px; }
+.graf-card {
+  background:#fff; border:1px solid #e8e8e8; border-radius:12px; padding:18px;
+}
+.graf-title { font-size:14px; font-weight:700; color:#1a1a1a; margin-bottom:4px; }
+.graf-sub { font-size:12px; color:#aaa; margin-bottom:16px; }
+.graf-bars { display:flex; align-items:flex-end; gap:8px; height:160px; }
+.graf-bar-wrap { flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; height:100%; justify-content:flex-end; }
+.graf-bar {
+  width:100%; border-radius:6px 6px 0 0; background:#4285f4;
+  min-height:4px; transition:height 0.3s; position:relative;
+}
+.graf-bar.hoy { background:#e53935; }
+.graf-bar-val { font-size:10px; font-weight:700; color:#555; }
+.graf-bar-lbl { font-size:10px; color:#aaa; text-align:center; }
+.graf-total-row { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-top:1px solid #f0f0f0; margin-top:8px; }
+.graf-total-lbl { font-size:13px; color:#888; }
+.graf-total-val { font-size:16px; font-weight:800; color:#4285f4; }
+
 /* TOAST */
 .toast {
   position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
@@ -427,7 +496,104 @@ body {
 
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-thumb { background: #e0e0e0; border-radius: 3px; }
-@media(max-width:600px){ .sidebar{display:none;} }
+/* ── MOBILE ── */
+@media(max-width:768px){
+  /* Ocultar sidebar, mostrar nav inferior */
+  .sidebar { display:none; }
+
+  body { flex-direction:column; }
+
+  .main { flex:1; display:flex; flex-direction:column; overflow:hidden; padding-bottom:60px; }
+
+  /* Tabs arriba más compactos */
+  .tabs { padding: 0 8px; height:44px; overflow-x:auto; white-space:nowrap; display:flex; flex-shrink:0; }
+  .tabs::-webkit-scrollbar { display:none; }
+  .tab { padding: 0 10px; font-size:13px; flex-shrink:0; }
+  .tabs-right { display:none; }
+
+  /* Summary más chico */
+  .summary { padding: 10px 12px; }
+  .sum-val { font-size:16px; }
+  .sum-item { padding: 0 10px; }
+
+  /* Toolbar en columna */
+  .toolbar { flex-wrap:wrap; padding:8px 12px; gap:8px; }
+  .search-lbl { display:none; }
+  .search-box { flex:1 1 100%; }
+  .filter-grp { flex:1; }
+  .filter-lbl { display:none; }
+  .filter-sel { width:100%; font-size:12px; padding:6px 8px; }
+
+  /* Lista más compacta */
+  .list-header { padding:6px 12px; }
+  .row { padding:10px 12px; }
+  .row-av { width:32px; height:32px; font-size:11px; margin-right:8px; }
+  .row-name { font-size:13px; }
+  .row-time { font-size:11px; }
+  .row-amt { font-size:14px; }
+  .row-actions { display:none !important; }
+
+  /* Bottom bar */
+  .bottom { padding:10px 12px; gap:8px; }
+  .btn-out { font-size:12px; padding:9px 8px; }
+  .btn-fill { font-size:13px; padding:9px; }
+
+  /* Ventas */
+  .ventas-summary { padding:10px 12px; gap:8px; }
+  .v-sum-card { padding:10px 12px; }
+  .v-sum-amount { font-size:16px; }
+  .v-sum-label { font-size:10px; }
+  .ventas-toolbar { padding:8px 12px; flex-wrap:wrap; }
+  .ventas-list-header { padding:6px 12px; }
+  .venta-row { padding:10px 12px; }
+
+  /* Stock */
+  .stock-summary { padding:10px 12px; gap:8px; }
+  .st-card { padding:10px 12px; }
+  .st-val { font-size:16px; }
+  .st-label { font-size:10px; }
+  .stock-row { padding:10px 12px; }
+  .stock-icon { width:30px; height:30px; margin-right:8px; font-size:14px; }
+  .stock-name { font-size:13px; }
+  .stock-qty { font-size:11px; }
+  .stock-pv { font-size:13px; }
+  .stock-pc { font-size:10px; }
+  .stock-ganancia { font-size:10px; }
+
+  /* Graficos */
+  .graf-body { padding:12px; gap:12px; }
+  .graf-card { padding:14px; }
+  .graf-bars { height:120px; gap:4px; }
+  .graf-bar-val { font-size:9px; }
+  .graf-bar-lbl { font-size:9px; }
+
+  /* Modales full screen en mobile */
+  .overlay { padding:0; align-items:flex-end; }
+  .modal { border-radius:16px 16px 0 0; max-height:92vh; }
+  .m-body { padding:14px 16px; }
+  .m-foot { padding:0 16px 24px; }
+
+  /* Auth */
+  .auth-box { border-radius:0; min-height:100vh; padding:40px 24px; box-shadow:none; }
+
+  /* Nav inferior mobile */
+  .mobile-nav {
+    display:flex; position:fixed; bottom:0; left:0; right:0; height:60px;
+    background:#fff; border-top:1px solid #e8e8e8; z-index:100;
+    align-items:center; justify-content:space-around;
+  }
+  .mob-nav-item {
+    display:flex; flex-direction:column; align-items:center; gap:2px;
+    font-size:10px; color:#aaa; cursor:pointer; padding:6px 12px;
+    border:none; background:none; font-family:inherit;
+  }
+  .mob-nav-item.active { color:#4285f4; }
+  .mob-nav-icon { font-size:20px; }
+}
+
+@media(min-width:769px){
+  .mobile-nav { display:none; }
+}
 </style>
 </head>
 <body>
@@ -487,6 +653,8 @@ body {
   <div class="sb-item active" id="sbC" onclick="setTab('clientes')">👥 Clientes</div>
   <div class="sb-item" id="sbP" onclick="setTab('proveedores')">🏭 Proveedores</div>
   <div class="sb-item" id="sbV" onclick="setTab('ventas')">💵 Ventas</div>
+  <div class="sb-item" id="sbS" onclick="setTab('stock')">📦 Stock</div>
+  <div class="sb-item" id="sbG" onclick="setTab('graficos')">📊 Gráficos</div>
   <div class="sb-item">💸 Gastos</div>
   <div class="sb-item">💰 Caja</div>
   <div class="sb-section">Gestión</div>
@@ -502,6 +670,8 @@ body {
     <div class="tab active" id="tabC" onclick="setTab('clientes')">Clientes <span class="tab-count" id="cntC">0</span></div>
     <div class="tab" id="tabP" onclick="setTab('proveedores')">Proveedores <span class="tab-count" id="cntP">0</span></div>
     <div class="tab" id="tabV" onclick="setTab('ventas')">Ventas</div>
+    <div class="tab" id="tabS" onclick="setTab('stock')">Stock</div>
+    <div class="tab" id="tabG" onclick="setTab('graficos')">Gráficos</div>
     <div class="tabs-right">?</div>
   </div>
 
@@ -602,6 +772,95 @@ body {
       <button class="btn-fill" onclick="openVenta()" style="flex:1">+ Registrar Venta</button>
     </div>
   </div>
+
+  </div>
+
+  <!-- PANTALLA STOCK -->
+  <div class="stock-screen" id="stockScreen">
+    <div class="stock-summary">
+      <div class="st-card total">
+        <div class="st-label">Valor total stock</div>
+        <div class="st-val" id="stValTotal">$0</div>
+        <div class="st-sub" id="stSubTotal">a precio de costo</div>
+      </div>
+      <div class="st-card items">
+        <div class="st-label">Productos</div>
+        <div class="st-val" id="stItems">0</div>
+        <div class="st-sub">tipos distintos</div>
+      </div>
+      <div class="st-card bajo">
+        <div class="st-label">Stock bajo</div>
+        <div class="st-val" id="stBajo">0</div>
+        <div class="st-sub">menos de 5 unidades</div>
+      </div>
+    </div>
+    <div class="ventas-toolbar">
+      <div class="search-lbl">Buscar producto</div>
+      <div class="search-box">
+        <span>🔍</span>
+        <input type="text" id="stockSearch" placeholder="Nombre del producto...">
+      </div>
+    </div>
+    <div class="list-header"><span>Producto</span><span>Precio venta / Ganancia</span></div>
+    <div class="stock-list" id="stockList">
+      <div class="empty"><div class="empty-icon">📦</div><div class="empty-title">Sin productos todavía</div></div>
+    </div>
+    <div class="bottom">
+      <button class="btn-fill" onclick="openStock()" style="flex:1">+ Agregar Producto</button>
+    </div>
+  </div>
+
+  <!-- PANTALLA GRAFICOS -->
+  <div class="graf-screen" id="grafScreen">
+    <div class="graf-body">
+      <div class="graf-card">
+        <div class="graf-title">Ventas por día de la semana</div>
+        <div class="graf-sub" id="grafSub">Últimos 7 días</div>
+        <div class="graf-bars" id="grafBars">
+          <div class="empty" style="width:100%;padding:20px"><div class="empty-icon">📊</div><div class="empty-title">Cargando...</div></div>
+        </div>
+        <div class="graf-total-row">
+          <div class="graf-total-lbl">Total del período</div>
+          <div class="graf-total-val" id="grafTotal">$0</div>
+        </div>
+      </div>
+
+      <div class="graf-card">
+        <div class="graf-title">Resumen rápido</div>
+        <div class="graf-sub">Comparativa de períodos</div>
+        <div id="grafResumen" style="display:flex;flex-direction:column;gap:10px;margin-top:4px"></div>
+      </div>
+
+      <div class="graf-card">
+        <div class="graf-title">📄 Descargar PDF</div>
+        <div class="graf-sub">Generá un reporte del día o del mes</div>
+        <div style="display:flex;gap:10px;margin-top:8px">
+          <button class="btn-out" onclick="generarPDF('dia')" style="flex:1">📋 Reporte del día</button>
+          <button class="btn-fill" onclick="generarPDF('mes')" style="flex:1">📅 Reporte del mes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<!-- MODAL STOCK -->
+<div class="overlay" id="stockModal">
+  <div class="modal">
+    <div class="m-head">
+      <div class="m-title" id="stockTitle">Nuevo Producto</div>
+      <button class="m-x" onclick="closeM('stockModal')">✕</button>
+    </div>
+    <div class="m-body">
+      <div class="fg"><label class="fl">Nombre del producto *</label><input class="fi" id="sNombre" placeholder="Ej: Coca Cola 1.5L"></div>
+      <div class="fg"><label class="fl">Cantidad disponible *</label><input class="fi" id="sCantidad" type="number" placeholder="0" min="0"></div>
+      <div class="fg"><label class="fl">Precio de costo</label><input class="fi" id="sCosto" type="number" placeholder="$0" min="0"></div>
+      <div class="fg"><label class="fl">Precio de venta</label><input class="fi" id="sVenta" type="number" placeholder="$0" min="0"></div>
+    </div>
+    <div class="m-foot">
+      <button class="btn-out" onclick="closeM('stockModal')">Cancelar</button>
+      <button class="btn-fill" id="btnStock" onclick="saveStock()">Guardar</button>
+    </div>
+  </div>
+</div>
 
 <!-- MODAL ADD / EDIT -->
 <div class="overlay" id="addModal">
@@ -721,6 +980,25 @@ body {
 </div>
 
 <div class="toast" id="toastEl"></div>
+
+<!-- NAV INFERIOR MOBILE -->
+<div class="mobile-nav" id="mobileNav">
+  <button class="mob-nav-item active" id="mnC" onclick="setTab('clientes')">
+    <span class="mob-nav-icon">👥</span>Clientes
+  </button>
+  <button class="mob-nav-item" id="mnP" onclick="setTab('proveedores')">
+    <span class="mob-nav-icon">🏭</span>Proveed.
+  </button>
+  <button class="mob-nav-item" id="mnV" onclick="setTab('ventas')">
+    <span class="mob-nav-icon">💵</span>Ventas
+  </button>
+  <button class="mob-nav-item" id="mnS" onclick="setTab('stock')">
+    <span class="mob-nav-icon">📦</span>Stock
+  </button>
+  <button class="mob-nav-item" id="mnG" onclick="setTab('graficos')">
+    <span class="mob-nav-icon">📊</span>Gráficos
+  </button>
+</div>
 
 <script>
 const API = window.location.origin;
@@ -896,23 +1174,32 @@ async function saveNegocio(){
 // ── TAB ──
 function setTab(t){
   tab=t;
-  // Tabs visuales
-  ['clientes','proveedores','ventas'].forEach(x=>{
-    const el = document.getElementById('tab'+x[0].toUpperCase()+x.slice(1));
-    if(el) el.classList.toggle('active', x===tab);
-  });
-  // Sidebar
-  ['C','P','V'].forEach((l,i)=>{
-    const el=document.getElementById('sb'+l);
-    if(el) el.classList.toggle('active',['clientes','proveedores','ventas'][i]===tab);
+  const allTabs = ['clientes','proveedores','ventas','stock','graficos'];
+  const sbIds   = ['C','P','V','S','G'];
+  const mnIds   = ['mnC','mnP','mnV','mnS','mnG'];
+
+  allTabs.forEach((x,i)=>{
+    const tid = 'tab'+x[0].toUpperCase()+x.slice(1);
+    const sid = 'sb'+sbIds[i];
+    const mid = mnIds[i];
+    const tel = document.getElementById(tid);
+    const sel = document.getElementById(sid);
+    const mel = document.getElementById(mid);
+    if(tel) tel.classList.toggle('active', x===tab);
+    if(sel) sel.classList.toggle('active', x===tab);
+    if(mel) mel.classList.toggle('active', x===tab);
   });
 
-  if(tab==='ventas'){
-    showVentasScreen();
-    return;
-  }
+  document.getElementById('contactosScreen').style.display='none';
+  document.getElementById('ventasScreen').classList.remove('on');
+  document.getElementById('stockScreen').classList.remove('on');
+  document.getElementById('grafScreen').classList.remove('on');
 
-  showContactosScreen();
+  if(tab==='ventas'){ showVentasScreen(); return; }
+  if(tab==='stock'){ document.getElementById('stockScreen').classList.add('on'); loadStock(); return; }
+  if(tab==='graficos'){ document.getElementById('grafScreen').classList.add('on'); loadGraficos(); return; }
+
+  document.getElementById('contactosScreen').style.display='flex';
   document.getElementById('addLbl').textContent=tab==='clientes'?'Agregar Cliente':'Agregar Proveedor';
   document.getElementById('searchLbl').textContent=tab==='clientes'?'Buscar clientes':'Buscar proveedores';
   if(tab==='clientes'){
@@ -1279,6 +1566,280 @@ document.getElementById('ventasSearch').addEventListener('input',()=>{
   clearTimeout(ventasSearchTmr);
   ventasSearchTmr=setTimeout(loadVentas,300);
 });
+
+// ── STOCK ──
+let editStockId = null;
+let stockSearchTmr = null;
+
+async function loadStock(){
+  const search = document.getElementById('stockSearch').value;
+  const box = document.getElementById('stockList');
+  try {
+    let url = '/stock';
+    if(search) url += `?buscar=${encodeURIComponent(search)}`;
+    const data = await api(url);
+
+    const totalVal = data.reduce((s,p) => s + (p.precio_costo * p.cantidad), 0);
+    const bajo = data.filter(p => p.cantidad < 5).length;
+    document.getElementById('stValTotal').textContent = fmt(totalVal);
+    document.getElementById('stItems').textContent = data.length;
+    document.getElementById('stBajo').textContent = bajo;
+
+    if(!data.length){
+      box.innerHTML=`<div class="empty"><div class="empty-icon">📦</div><div class="empty-title">${search?'Sin resultados':'Sin productos todavía'}</div></div>`;
+      return;
+    }
+    box.innerHTML = data.map(p => {
+      const ganancia = p.precio_venta > 0 && p.precio_costo > 0 ? Math.round(((p.precio_venta - p.precio_costo)/p.precio_costo)*100) : null;
+      const isLow = p.cantidad < 5;
+      return `<div class="stock-row">
+        <div class="stock-icon">📦</div>
+        <div class="stock-info">
+          <div class="stock-name">${esc(p.nombre)}</div>
+          <div class="stock-qty ${isLow?'low':'ok'}">${isLow?'⚠️ ':''}${p.cantidad} unidades</div>
+        </div>
+        <div class="stock-prices">
+          <div class="stock-pv">${p.precio_venta>0?fmt(p.precio_venta):'Sin precio'}</div>
+          <div class="stock-pc">Costo: ${p.precio_costo>0?fmt(p.precio_costo):'-'}</div>
+          ${ganancia!==null?`<div class="stock-ganancia">+${ganancia}% ganancia</div>`:''}
+        </div>
+        <div class="row-actions" onclick="event.stopPropagation()">
+          <button class="row-action-btn btn-edit" onclick="openStockEdit(${p.id},'${esc(p.nombre)}',${p.cantidad},${p.precio_costo},${p.precio_venta})">✏️ Editar</button>
+          <button class="row-action-btn btn-del" onclick="eliminarStock(${p.id},'${esc(p.nombre)}')">🗑 Eliminar</button>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e){
+    box.innerHTML=`<div class="empty"><div class="empty-icon">⚠️</div><div class="empty-title">Error al cargar stock</div></div>`;
+  }
+}
+
+function openStock(){
+  editStockId=null;
+  document.getElementById('stockTitle').textContent='Nuevo Producto';
+  ['sNombre','sCantidad','sCosto','sVenta'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('stockModal').classList.add('on');
+  setTimeout(()=>document.getElementById('sNombre').focus(),150);
+}
+
+function openStockEdit(id, nombre, cantidad, costo, venta){
+  editStockId=id;
+  document.getElementById('stockTitle').textContent='Editar Producto';
+  document.getElementById('sNombre').value=nombre;
+  document.getElementById('sCantidad').value=cantidad;
+  document.getElementById('sCosto').value=costo||'';
+  document.getElementById('sVenta').value=venta||'';
+  document.getElementById('stockModal').classList.add('on');
+  setTimeout(()=>document.getElementById('sNombre').focus(),150);
+}
+
+async function saveStock(){
+  const nombre   = document.getElementById('sNombre').value.trim();
+  const cantidad = parseFloat(document.getElementById('sCantidad').value);
+  const precio_costo = parseFloat(document.getElementById('sCosto').value)||0;
+  const precio_venta = parseFloat(document.getElementById('sVenta').value)||0;
+  if(!nombre){ toast('Ingresá el nombre'); return; }
+  if(isNaN(cantidad)||cantidad<0){ toast('Ingresá una cantidad válida'); return; }
+  const btn=document.getElementById('btnStock');
+  btn.disabled=true; btn.textContent='Guardando...';
+  try {
+    if(editStockId){
+      await api(`/stock/${editStockId}`,{method:'PUT',body:JSON.stringify({nombre,cantidad,precio_costo,precio_venta})});
+      toast('✓ Producto actualizado');
+    } else {
+      await api('/stock',{method:'POST',body:JSON.stringify({nombre,cantidad,precio_costo,precio_venta})});
+      toast('✓ Producto agregado');
+    }
+    closeM('stockModal'); loadStock();
+  } catch(e){ toast('Error al guardar'); }
+  finally{ btn.disabled=false; btn.textContent='Guardar'; }
+}
+
+async function eliminarStock(id, nombre){
+  if(!confirm(`¿Eliminar "${nombre}" del stock?`)) return;
+  try {
+    await api(`/stock/${id}`,{method:'DELETE'});
+    toast('Producto eliminado'); loadStock();
+  } catch(e){ toast('Error al eliminar'); }
+}
+
+document.getElementById('stockSearch').addEventListener('input',()=>{
+  clearTimeout(stockSearchTmr);
+  stockSearchTmr=setTimeout(loadStock,300);
+});
+
+// ── GRÁFICOS ──
+async function loadGraficos(){
+  try {
+    const [semana, hoy, mes] = await Promise.all([
+      api('/ventas/resumen?periodo=semana'),
+      api('/ventas/resumen?periodo=hoy'),
+      api('/ventas/resumen?periodo=mes'),
+    ]);
+
+    // Resumen comparativo
+    document.getElementById('grafResumen').innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:#f7f7f7;border-radius:8px">
+        <div style="font-size:13px;color:#555">📅 Hoy</div>
+        <div style="font-size:15px;font-weight:700;color:#e53935">${fmt(hoy.total)}</div>
+        <div style="font-size:12px;color:#aaa">${hoy.cantidad} ventas</div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:#f7f7f7;border-radius:8px">
+        <div style="font-size:13px;color:#555">📆 Esta semana</div>
+        <div style="font-size:15px;font-weight:700;color:#4285f4">${fmt(semana.total)}</div>
+        <div style="font-size:12px;color:#aaa">${semana.cantidad} ventas</div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:#f7f7f7;border-radius:8px">
+        <div style="font-size:13px;color:#555">🗓 Este mes</div>
+        <div style="font-size:15px;font-weight:700;color:#43a047">${fmt(mes.total)}</div>
+        <div style="font-size:12px;color:#aaa">${mes.cantidad} ventas</div>
+      </div>
+    `;
+
+    // Gráfico barras por día
+    const dias = await api('/ventas/por-dia');
+    document.getElementById('grafTotal').textContent = fmt(semana.total);
+    document.getElementById('grafSub').textContent = 'Últimos 7 días';
+
+    if(!dias.length){
+      document.getElementById('grafBars').innerHTML='<div class="empty" style="width:100%"><div class="empty-icon">📊</div><div class="empty-title">Sin ventas todavía</div></div>';
+      return;
+    }
+
+    const maxVal = Math.max(...dias.map(d=>d.total), 1);
+    const hoyLabel = new Date().toLocaleDateString('es-AR',{weekday:'short'}).toLowerCase().slice(0,3);
+
+    document.getElementById('grafBars').innerHTML = dias.map(d => {
+      const pct = Math.max((d.total/maxVal)*100, 4);
+      const esHoy = d.label.toLowerCase().includes(hoyLabel);
+      return `<div class="graf-bar-wrap">
+        <div class="graf-bar-val">${d.total>0?'$'+Math.round(d.total/1000)+'k':''}</div>
+        <div class="graf-bar ${esHoy?'hoy':''}" style="height:${pct}%"></div>
+        <div class="graf-bar-lbl">${d.label}</div>
+      </div>`;
+    }).join('');
+
+  } catch(e){ console.error(e); }
+}
+
+// ── PDF ──
+async function generarPDF(periodo){
+  try {
+    const [ventas, resHoy, resMes] = await Promise.all([
+      api(`/ventas?periodo=${periodo}`),
+      api('/ventas/resumen?periodo=hoy'),
+      api('/ventas/resumen?periodo=mes'),
+    ]);
+
+    const negocio = session?.negocio_nombre || 'Mi Negocio';
+    const fecha   = new Date().toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});
+    const hora    = new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+    const titulo  = periodo==='dia' ? 'Reporte del Día' : 'Reporte del Mes';
+    const resumen = periodo==='dia' ? resHoy : resMes;
+
+    const filas = ventas.map(v=>`
+      <tr>
+        <td style="padding:7px 10px;border-bottom:1px solid #f0f0f0">${esc(v.descripcion)}</td>
+        <td style="padding:7px 10px;border-bottom:1px solid #f0f0f0;text-align:right;font-weight:600;color:#16a34a">${fmt(v.monto)}</td>
+      </tr>`).join('');
+
+    const html = `<!DOCTYPE html>
+<html><head><meta charset="UTF-8">
+<style>
+  body { font-family: -apple-system, sans-serif; color: #1a1a1a; padding: 32px; max-width: 600px; margin: 0 auto; }
+  .logo { display:flex; align-items:center; gap:10px; margin-bottom:24px; }
+  .logo-box { width:36px;height:36px;background:#4285f4;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:18px; }
+  .logo-text { font-size:22px;font-weight:700; }
+  h1 { font-size:20px;margin-bottom:4px; }
+  .meta { font-size:13px;color:#888;margin-bottom:24px; }
+  .cards { display:flex;gap:12px;margin-bottom:24px; }
+  .card { flex:1;padding:14px;border-radius:10px;border:1px solid #e8e8e8;text-align:center; }
+  .card.green { background:#f0fdf4;border-color:#bbf7d0; }
+  .card-lbl { font-size:11px;font-weight:700;text-transform:uppercase;color:#888;margin-bottom:4px; }
+  .card.green .card-lbl { color:#16a34a; }
+  .card-val { font-size:22px;font-weight:800; }
+  table { width:100%;border-collapse:collapse;margin-top:8px; }
+  th { text-align:left;padding:8px 10px;background:#f7f7f7;font-size:11px;text-transform:uppercase;color:#888;letter-spacing:0.5px; }
+  .footer { margin-top:32px;font-size:12px;color:#aaa;text-align:center; }
+</style>
+</head><body>
+  <div class="logo"><div class="logo-box">F</div><div class="logo-text">FiadoApp</div></div>
+  <h1>${titulo}</h1>
+  <div class="meta">${negocio} · ${fecha} ${hora}</div>
+  <div class="cards">
+    <div class="card green">
+      <div class="card-lbl">Total vendido</div>
+      <div class="card-val">${fmt(resumen.total)}</div>
+    </div>
+    <div class="card">
+      <div class="card-lbl">Cantidad de ventas</div>
+      <div class="card-val">${resumen.cantidad}</div>
+    </div>
+    <div class="card">
+      <div class="card-lbl">Ticket promedio</div>
+      <div class="card-val">${resumen.cantidad>0?fmt(resumen.total/resumen.cantidad):'$0'}</div>
+    </div>
+  </div>
+  <table>
+    <tr><th>Descripción</th><th style="text-align:right">Monto</th></tr>
+    ${filas||'<tr><td colspan="2" style="padding:20px;text-align:center;color:#aaa">Sin ventas en este período</td></tr>'}
+  </table>
+  <div class="footer">Generado por FiadoApp · ${fecha}</div>
+</body></html>`;
+
+    const win = window.open('', '_blank');
+    win.document.write(html);
+    win.document.close();
+    setTimeout(()=>{ win.print(); }, 500);
+
+  } catch(e){ toast('Error al generar PDF'); }
+}
+
+// ── PWA SERVICE WORKER ──
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('/sw.js').catch(()=>{});
+}
+
+// Prompt de instalación
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  // Mostrar banner después de 30 segundos si no está instalada
+  setTimeout(()=>{
+    if(deferredPrompt && session) showInstallBanner();
+  }, 30000);
+});
+
+function showInstallBanner(){
+  const banner = document.createElement('div');
+  banner.id = 'installBanner';
+  banner.style.cssText = `
+    position:fixed; bottom:70px; left:12px; right:12px; z-index:200;
+    background:#1e2640; color:#fff; border-radius:12px; padding:14px 16px;
+    display:flex; align-items:center; gap:12px; box-shadow:0 4px 20px rgba(0,0,0,0.3);
+  `;
+  banner.innerHTML = `
+    <div style="font-size:28px">📱</div>
+    <div style="flex:1">
+      <div style="font-weight:700;font-size:14px">Instalar FiadoApp</div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.6);margin-top:2px">Agregá la app a tu pantalla de inicio</div>
+    </div>
+    <button onclick="doInstall()" style="background:#4285f4;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit">Instalar</button>
+    <button onclick="document.getElementById('installBanner').remove()" style="background:none;border:none;color:rgba(255,255,255,0.5);font-size:18px;cursor:pointer;padding:4px">✕</button>
+  `;
+  document.body.appendChild(banner);
+}
+
+async function doInstall(){
+  if(!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const result = await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  const banner = document.getElementById('installBanner');
+  if(banner) banner.remove();
+  if(result.outcome === 'accepted') toast('✓ App instalada');
+}
 
 // ── BOOT ──
 tryAutoLogin();
