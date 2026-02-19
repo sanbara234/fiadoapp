@@ -16,7 +16,7 @@ if DATABASE_URL:
     import psycopg2.extras
 
     def get_db():
-        conn = psycopg2.connect(DATABASE_URL)
+        conn = psycopg2.connect(DATABASE_URL, cursor_factory=psycopg2.extras.RealDictCursor)
         return conn
 
     def fetchall(cursor):
